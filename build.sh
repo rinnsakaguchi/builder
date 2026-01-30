@@ -218,16 +218,6 @@ if susfs_included; then
       cd $OLDPWD
     fi
   fi
-  # Attempt to fix undeclared identifier 'CMD_SUSFS_HIDE_SUS_MNTS_FOR_ALL_PROCS'
-  # on RKSU
-  if [ "$KSU" == "Rissu" ]; then
-    grep -Rl 'CMD_SUSFS_HIDE_SUS_MNTS_FOR_ALL_PROCS' KernelSU/kernel \
-      | while read -r f; do
-        sed -i 's/CMD_SUSFS_HIDE_SUS_MNTS_FOR_ALL_PROCS/CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS/g' \
-          $f
-      done
-    unset f
-  fi
   config --enable CONFIG_KSU_SUSFS
 else
   config --disable CONFIG_KSU_SUSFS
