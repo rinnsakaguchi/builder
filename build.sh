@@ -9,7 +9,7 @@ elif [ "$KVER" == "5.10" ]; then
 elif [ "$KVER" == "6.1" ]; then
   RELEASE="v0.1"
 fi
-KERNEL_NAME="qx"
+KERNEL_NAME="OtagKernel"
 USER="eraselk"
 HOST="gacorprjkt"
 TIMEZONE="Asia/Makassar"
@@ -29,11 +29,11 @@ elif [ "$KVER" == "5.10" ]; then
   KERNEL_BRANCH="master"
 fi
 DEFCONFIG_TO_MERGE=""
-GKI_RELEASES_REPO="https://github.com/linastorvaldz/quartix-releases"
+GKI_RELEASES_REPO="https://github.com/linastorvaldz/OtagKernel-releases"
 #CLANG_URL="https://github.com/linastorvaldz/idk/releases/download/clang-r547379/clang.tgz"
 CLANG_URL="https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b/archive/refs/heads/lineage-20.0.tar.gz"
 CLANG_BRANCH=""
-AK3_ZIP_NAME="AK3-$KERNEL_NAME-REL-KVER-VARIANT-BUILD_DATE.zip"
+AK3_ZIP_NAME="$KERNEL_NAME-REL-KVER-VARIANT-BUILD_DATE.zip"
 OUTDIR="$WORKDIR/out"
 KSRC="$WORKDIR/ksrc"
 KERNEL_PATCHES="$WORKDIR/kernel-patches"
