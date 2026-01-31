@@ -8,9 +8,9 @@ jobs:
     strategy:
       matrix:
         variant:
-          - { name: "VNL", KSU: "None", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "VNL", KSU: "no", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
           - { name: "KSU", KSU: "yes", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSU w/SuSFS", KSU: "yes", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "true" }
+          - { name: "KSU SuSFS", KSU: "yes", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "true" }
 
     name: Build ${{ matrix.variant.name }} variant
     uses: ./.github/workflows/build.yml
