@@ -61,10 +61,8 @@ cd $WORKDIR
 # Set Kernel variant
 log "Setting Kernel variant..."
 case "$KSU" in
-  "Next") VARIANT="KSUN" ;;
-  "Biasa") VARIANT="KSU" ;;
-  "Rissu") VARIANT="RKSU" ;;
-  "None") VARIANT="NKSU" ;;
+  "yes") VARIANT="KSU" ;;
+  "no") VARIANT="VNL" ;;
 esac
 susfs_included && VARIANT+="+SuSFS"
 
@@ -121,7 +119,7 @@ cd $KSRC
 ## KernelSU setup
 if ksu_included; then
   # Remove existing KernelSU drivers
-  for KSU_PATH in drivers/staging/kernelsu drivers/kernelsu KernelSU; do
+  for KSU_PATH in drivers/staging/kernelsu drivers/kernelsu KernelSU KernelSU-Next; do
     if [ -d $KSU_PATH ]; then
       log "KernelSU driver found in $KSU_PATH, Removing..."
       KSU_DIR=$(dirname "$KSU_PATH")
@@ -133,14 +131,12 @@ if ksu_included; then
     fi
   done
 
-  # Install kernelsu
-  case "$KSU" in
-    "Next") install_ksu $(susfs_included && echo 'pershoot/KernelSU-Next dev-susfs' || echo 'KernelSU-Next/KernelSU-Next dev') ;;
-    "Biasa") install_ksu tiann/KernelSU main ;;
-    "Rissu") install_ksu rsuntk/KernelSU $(susfs_included && echo susfs-rksu-master || echo main) ;;
-  esac
+  install_ksu 'pershoot/KernelSU-Next' 'dev-susfs'
   config --enable CONFIG_KSU
-  config --disable CONFIG_KSU_MANUAL_SU
+
+  cd KernelSU-Next
+  patch -p1 < $KERNEL_PATCHES/ksu/ksun-add-more-managers-support.patch
+  cd $OLDPWD
 fi
 
 # SUSFS
@@ -172,84 +168,10 @@ if susfs_included; then
     patch -p1 < $KERNEL_PATCHES/susfs/fix-statfs-crc-mismatch-susfs.patch
   fi
   SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
-
-  # KernelSU-side
-  if [ "$KSU" == "Next" ] || [ "$KSU" == "Biasa" ]; then
-    log "Applying kernelsu-side susfs patches.."
-
-    if false; then
-      if [ "$KSU" == "Next" ]; then
-        SUSFS_FIX_PATCHES="$PWD/kernel_patches/next/susfs_fix_patches/$SUSFS_VERSION"
-        git clone --depth=1 -q https://github.com/WildKernels/kernel_patches $PWD/kernel_patches
-        if [ ! -d "$SUSFS_FIX_PATCHES" ]; then
-          error "susfs fix patches are not available for susfs $SUSFS_VERSION."
-        fi
-      fi
-    fi
-
-    if [ "$KSU" == "Next" ]; then
-      if false; then
-        cd KernelSU-Next
-      fi
-    elif [ "$KSU" == "Biasa" ]; then
-      cd KernelSU
-    fi
-
-    if [ "$KSU" == "Next" ]; then
-      if false; then
-        patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || true
-      fi
-    elif [ "$KSU" == "Biasa" ]; then
-      patch -p1 < $SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch
-    fi
-
-    if false; then
-      if [ "$KSU" == "Next" ]; then
-        log "Applying the susfs fix patches..."
-        # apply the fix patches
-        for p in "$SUSFS_FIX_PATCHES"/*.patch; do
-          patch -p1 --forward < $p
-        done
-        # cleanup .orig / .rej
-        find . -type f \( -name '*.orig' -o -name '*.rej' \) -delete
-      fi
-    fi
-    if ! [ "$KSU" == "Next" ]; then
-      cd $OLDPWD
-    fi
-  fi
   config --enable CONFIG_KSU_SUSFS
 else
   config --disable CONFIG_KSU_SUSFS
 fi
-
-# Apply some kernelsu patches
-if [ "$KSU" == "Rissu" ]; then
-  cd KernelSU
-  patch -p1 < "$KERNEL_PATCHES"/ksu/rksu-add-mambosu-manager-support.patch
-  cd "$OLDPWD"
-fi
-
-# Manual Hooks
-if ksu_manual_hook; then
-  #  log "Applying manual hook patch"
-  #  if [ "$KSU" == "Rissu" ]; then
-  #    patch -p1 --forward < $KERNEL_PATCHES/hooks/manual-hook-v1.6.patch
-  #  else
-  #    patch -p1 --forward < $KERNEL_PATCHES/hooks/manual-hook-v1.4.patch
-  #    patch -p1 --forward < $KERNEL_PATCHES/hooks/reboot-hook.patch
-  #  fi
-  #  config --enable CONFIG_KSU_MANUAL_HOOK
-  #  config --disable CONFIG_KSU_KPROBES_HOOK
-  #  config --disable CONFIG_KSU_SYSCALL_HOOK
-  #  config --disable CONFIG_KSU_SUSFS_SUS_SU # Conflicts with manual hook
-  : "DUMMY"
-fi
-
-# Enable KPM Supports for SukiSU
-# if [ $KSU == "Suki" ]; then
-#   config --enable CONFIG_KPM
-# fi
 
 # set localversion
 if [ $TODO == "kernel" ]; then
@@ -344,24 +266,6 @@ fi
 
 ## Post-compiling stuff
 cd $WORKDIR
-
-# Patch the kernel Image for KPM Supports
-#if [ $KSU == "Suki" ]; then
-#  tempdir=$(mktemp -d) && cd $tempdir
-#
-#  # Setup patching tool
-#  LATEST_SUKISU_PATCH=$(curl -s "https://api.github.com/repos/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest" | grep "browser_download_url" | grep "patch_linux" | cut -d '"' -f 4)
-#  curl -Ls "$LATEST_SUKISU_PATCH" -o patch_linux
-#  chmod a+x ./patch_linux
-#
-#  # Patch the kernel image
-#  cp $KERNEL_IMAGE ./Image
-#  sudo ./patch_linux
-#  mv oImage Image
-#  KERNEL_IMAGE=$(pwd)/Image
-#
-#  cd -
-#fi
 
 # Clone AnyKernel
 log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
