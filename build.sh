@@ -156,15 +156,15 @@ if susfs_included; then
   cp -R $SUSFS_PATCHES/fs/* ./fs
   cp -R $SUSFS_PATCHES/include/* ./include
   patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_${SUSFS_BRANCH}.patch || true
-  if [ $LINUX_VERSION_CODE -eq 6630 ]; then
+  if [ $(echo "$LINUX_VERSION_CODE" | head -c4) -eq 6630 ]; then
     patch -p1 < $KERNEL_PATCHES/susfs/namespace.c_fix.patch
     patch -p1 < $KERNEL_PATCHES/susfs/task_mmu.c_fix.patch
-  elif [ $LINUX_VERSION_CODE -eq 6658 ]; then
+  elif [ $(echo "$LINUX_VERSION_CODE" | head -c4) -eq 6658 ]; then
     patch -p1 < $KERNEL_PATCHES/susfs/task_mmu.c_fix-k6.6.58.patch
   elif [ $(echo "$LINUX_VERSION_CODE" | head -c2) -eq 61 ]; then
     patch -p1 < $KERNEL_PATCHES/susfs/fs_proc_base.c-fix-k6.1.patch
   elif [ $(echo "$LINUX_VERSION_CODE" | head -c3) -eq 510 ]; then
-    patch -p1 <$KERNEL_PATCHES/susfs/pershoot-susfs-k5.10.patch
+    patch -p1 < $KERNEL_PATCHES/susfs/pershoot-susfs-k5.10.patch
   fi
   if [ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]; then
     patch -p1 < $KERNEL_PATCHES/susfs/fix-statfs-crc-mismatch-susfs.patch
