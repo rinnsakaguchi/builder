@@ -9,12 +9,19 @@ elif [ "$KVER" == "5.10" ]; then
 elif [ "$KVER" == "6.1" ]; then
   RELEASE="v0.1"
 fi
+
 KERNEL_NAME="OtagKernel"
 USER="eraselk"
 HOST="gacorprjkt"
 TIMEZONE="Asia/Makassar"
 ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
-KERNEL_DEFCONFIG="quartix_defconfig"
+
+if [ "$KVER" == "5.10" ]; then
+  KERNEL_DEFCONFIG="otag_defconfig"
+else
+  KERNEL_DEFCONFIG="quartix_defconfig"
+fi
+
 if [ "$KVER" == "6.6" ]; then
   KERNEL_REPO="https://github.com/linastorvaldz/kernel-android15-6.6"
   ANYKERNEL_BRANCH="android15-6.6"
