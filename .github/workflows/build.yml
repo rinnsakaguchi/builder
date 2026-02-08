@@ -75,7 +75,7 @@ jobs:
 
       - name: Determine Build Status
         run: |
-          if [[ "${{ toJson(github.event.inputs) }}" == "null" ]]; then
+          if [ "${{ toJson(github.event.inputs) }}" == "null" ]; then
             echo "STATUS=RELEASE" >> $GITHUB_ENV
             echo "TRIGGER=workflow_call" >> $GITHUB_ENV
           else
@@ -99,25 +99,25 @@ jobs:
 
           ret=0
           # Check Secrets
-          if [[[[ -z "$TG_CHAT_ID" ]]]]; then
+          if [[ -z "$TG_CHAT_ID" ]]; then
             _error "Missing TG_CHAT_ID secret (Telegram Chat ID)"
           fi
-          if [[[[ -z "$TG_BOT_TOKEN" ]]]]; then
+          if [[ -z "$TG_BOT_TOKEN" ]]; then
             _error "Missing TG_BOT_TOKEN secret (Telegram Bot Token)"
           fi
-          if [[[[ -z "$GH_TOKEN" ]]]]; then
+          if [[ -z "$GH_TOKEN" ]]; then
             _error "Missing GH_TOKEN secret (GitHub PAT)"
           fi
 
           # KernelSU
-          if [[[[ $KSU == "no" && $KSU_SUSFS == "true" ]]]]; then
+          if [[ $KSU == "no" && $KSU_SUSFS == "true" ]]; then
               _error "Cannot use SuSFS without KernelSU"
           fi
-          if [[[[ $KSU == "no" && $KSU_MANUAL_HOOK == "true" ]]]]; then
+          if [[ $KSU == "no" && $KSU_MANUAL_HOOK == "true" ]]; then
             _error "Cannot use KSU Manual Hooks without KernelSU!"
           fi
 
-          if [[[[ $ret -gt 0 ]]]]; then
+          if [[ $ret -gt 0 ]]; then
             exit $ret
           fi
 
