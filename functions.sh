@@ -10,7 +10,7 @@ upload_file() {
   local FILE="$1"
   local CAPTION="${2:-}"
 
-  if ! [ -f $FILE ]; then
+  if ! [[ -f $FILE ]]; then
     error "file $FILE doesn't exist"
   fi
 
@@ -40,7 +40,7 @@ install_ksu() {
   local REF="$2"
   local URL
 
-  if [ -z "$REPO" ] || [ -z "$REF" ]; then
+  if [[ -z "$REPO" ]] || [[ -z "$REF" ]]; then
     echo "Usage: install_ksu <user/repo> <ref>"
     exit 1
   fi
@@ -55,14 +55,14 @@ install_ksu() {
 ksu_included() {
   # if variant is not VNL then
   # kernelsu is included!
-  [ $VARIANT != "VNL" ]
+  [[ $VARIANT != "VNL" ]]
   return $?
 }
 
 # susfs_included() function
 # Type: bool
 susfs_included() {
-  [ $KSU_SUSFS == "true" ]
+  [[ $KSU_SUSFS == "true" ]]
   return $?
 }
 
@@ -79,7 +79,7 @@ config() {
 
 # Logging function
 log() {
-  echo -e "[LOG] $*"
+  echo -e "[[LOG]] $*"
 }
 
 error() {
@@ -90,7 +90,7 @@ error() {
 ERROR: $*
 EOF
   )
-  echo -e "[ERROR] $*"
+  echo -e "[[ERROR]] $*"
   send_msg "$err_txt"
   upload_file "$WORKDIR/build.log"
   exit 1

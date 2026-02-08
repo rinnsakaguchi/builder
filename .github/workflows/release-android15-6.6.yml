@@ -48,20 +48,20 @@ jobs:
           # Find the info.txt file
           info_file=$(find release_files -name "info.txt" -type f | head -1)
 
-          if [[ -f "$info_file" ]]; then
+          if [[[[ -f "$info_file" ]]]]; then
             echo "Found info.txt at: $info_file"
 
             # Extract variables safely without using functions.sh
             while IFS='=' read -r key value; do
               # Skip empty lines and comments
-              [[ -z "$key" || "$key" =~ ^#.*$ ]] && continue
+              [[[[ -z "$key" || "$key" =~ ^#.*$ ]]]] && continue
 
               # Clean up whitespace
               key=$(echo "$key" | xargs)
               value=$(echo "$value" | xargs)
 
               # Validate that we have both key and value
-              if [[ -n "$key" && -n "$value" ]]; then
+              if [[[[ -n "$key" && -n "$value" ]]]]; then
                 echo "Setting: $key=$value"
                 echo "$key=$value" >> $GITHUB_ENV
               fi
@@ -76,10 +76,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             # Get the latest tag, handle case where no tags exist
-            LATEST_TAG=$(gh api repos/$RELEASE_REPO/tags --jq '.[0].name' 2>/dev/null || echo "")
+            LATEST_TAG=$(gh api repos/$RELEASE_REPO/tags --jq '.[[0]].name' 2>/dev/null || echo "")
 
             # Handle case when $LATEST_TAG doesn't contain $KERNEL_NAME or is empty
-            if [[ -z "$LATEST_TAG" ]] || ! echo "$LATEST_TAG" | grep -q "$KERNEL_NAME"; then
+            if [[[[ -z "$LATEST_TAG" ]]]] || ! echo "$LATEST_TAG" | grep -q "$KERNEL_NAME"; then
                 RELEASE_TAG="$KERNEL_NAME-r1"
             else
                 RELEASE_TAG="$(echo "$LATEST_TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')"
@@ -106,7 +106,7 @@ jobs:
 
       - name: Send notification to TG (Safe)
         run: |
-            MESSAGE="📦 Release completed! [Click](https://github.com/${{ env.RELEASE_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
+            MESSAGE="📦 Release completed! [[Click]](https://github.com/${{ env.RELEASE_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
             source functions.sh
             send_msg "$MESSAGE"
         env:

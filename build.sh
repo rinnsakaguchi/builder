@@ -2,11 +2,11 @@
 
 # Constants
 WORKDIR="$(pwd)"
-if [ "$KVER" == "6.6" ]; then
+if [[ "$KVER" == "6.6" ]]; then
   RELEASE="v0.3"
-elif [ "$KVER" == "5.10" ]; then
+elif [[ "$KVER" == "5.10" ]]; then
   RELEASE="v0.3"
-elif [ "$KVER" == "6.1" ]; then
+elif [[ "$KVER" == "6.1" ]]; then
   RELEASE="v0.1"
 fi
 
@@ -16,21 +16,21 @@ HOST="gacorprjkt"
 TIMEZONE="Asia/Makassar"
 ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
 
-if [ "$KVER" == "5.10" ]; then
+if [[ "$KVER" == "5.10" ]]; then
   KERNEL_DEFCONFIG="otag_defconfig"
 else
   KERNEL_DEFCONFIG="quartix_defconfig"
 fi
 
-if [ "$KVER" == "6.6" ]; then
+if [[ "$KVER" == "6.6" ]]; then
   KERNEL_REPO="https://github.com/linastorvaldz/kernel-android15-6.6"
   ANYKERNEL_BRANCH="android15-6.6"
   KERNEL_BRANCH="android15-6.6-2025-01"
-elif [ "$KVER" == "6.1" ]; then
+elif [[ "$KVER" == "6.1" ]]; then
   KERNEL_REPO="https://github.com/linastorvaldz/kernel-android14-6.1"
   ANYKERNEL_BRANCH="android14-6.1"
   KERNEL_BRANCH="android14-6.1-lts"
-elif [ "$KVER" == "5.10" ]; then
+elif [[ "$KVER" == "5.10" ]]; then
   KERNEL_REPO="https://github.com/linastorvaldz/kernel-android12-5.10"
   ANYKERNEL_BRANCH="android12-5.10"
   KERNEL_BRANCH="master"
@@ -47,7 +47,7 @@ KERNEL_PATCHES="$WORKDIR/kernel-patches"
 
 # Handle error
 exec > >(tee $WORKDIR/build.log) 2>&1
-trap 'error "Failed at line $LINENO [$BASH_COMMAND]"' ERR
+trap 'error "Failed at line $LINENO [[$BASH_COMMAND]]"' ERR
 
 # Import functions
 source $WORKDIR/functions.sh
@@ -80,7 +80,7 @@ AK3_ZIP_NAME=${AK3_ZIP_NAME//VARIANT/$VARIANT}
 # Download Clang
 CLANG_DIR="$WORKDIR/clang"
 CLANG_BIN="${CLANG_DIR}/bin"
-if [ -z "$CLANG_BRANCH" ]; then
+if [[ -z "$CLANG_BRANCH" ]]; then
   log "🔽 Downloading Clang..."
   wget -qO clang-archive "$CLANG_URL"
   mkdir -p "$CLANG_DIR"
@@ -97,8 +97,8 @@ if [ -z "$CLANG_BRANCH" ]; then
   esac
   rm clang-archive
 
-  if [ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ] \
-    && [ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]; then
+  if [[ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]] \
+    && [[ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]]; then
     SINGLE_DIR=$(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type d)
     mv $SINGLE_DIR/* $CLANG_DIR/
     rm -rf $SINGLE_DIR
@@ -127,12 +127,12 @@ cd $KSRC
 if ksu_included; then
   # Remove existing KernelSU drivers
   for KSU_PATH in drivers/staging/kernelsu drivers/kernelsu KernelSU KernelSU-Next; do
-    if [ -d $KSU_PATH ]; then
+    if [[ -d $KSU_PATH ]]; then
       log "KernelSU driver found in $KSU_PATH, Removing..."
       KSU_DIR=$(dirname "$KSU_PATH")
 
-      [ -f "$KSU_DIR/Kconfig" ] && sed -i '/kernelsu/d' $KSU_DIR/Kconfig
-      [ -f "$KSU_DIR/Makefile" ] && sed -i '/kernelsu/d' $KSU_DIR/Makefile
+      [[ -f "$KSU_DIR/Kconfig" ]] && sed -i '/kernelsu/d' $KSU_DIR/Kconfig
+      [[ -f "$KSU_DIR/Makefile" ]] && sed -i '/kernelsu/d' $KSU_DIR/Makefile
 
       rm -rf $KSU_PATH
     fi
@@ -152,28 +152,28 @@ if susfs_included; then
   log "Applying kernel-side susfs patches"
   SUSFS_DIR="$WORKDIR/susfs"
   SUSFS_PATCHES="${SUSFS_DIR}/kernel_patches"
-  if [ "$KVER" == "6.6" ]; then
+  if [[ "$KVER" == "6.6" ]]; then
     SUSFS_BRANCH=gki-android15-6.6
-  elif [ "$KVER" == "6.1" ]; then
+  elif [[ "$KVER" == "6.1" ]]; then
     SUSFS_BRANCH=gki-android14-6.1
-  elif [ "$KVER" == "5.10" ]; then
+  elif [[ "$KVER" == "5.10" ]]; then
     SUSFS_BRANCH=gki-android12-5.10
   fi
   git clone --depth=1 -q https://gitlab.com/simonpunk/susfs4ksu -b $SUSFS_BRANCH $SUSFS_DIR
   cp -R $SUSFS_PATCHES/fs/* ./fs
   cp -R $SUSFS_PATCHES/include/* ./include
   patch -p1 < $SUSFS_PATCHES/50_add_susfs_in_${SUSFS_BRANCH}.patch || true
-  if [ $(echo "$LINUX_VERSION_CODE" | head -c4) -eq 6630 ]; then
+  if [[ $(echo "$LINUX_VERSION_CODE" | head -c4) -eq 6630 ]]; then
     patch -p1 < $KERNEL_PATCHES/susfs/namespace.c_fix.patch
     patch -p1 < $KERNEL_PATCHES/susfs/task_mmu.c_fix.patch
-  elif [ $(echo "$LINUX_VERSION_CODE" | head -c4) -eq 6658 ]; then
+  elif [[ $(echo "$LINUX_VERSION_CODE" | head -c4) -eq 6658 ]]; then
     patch -p1 < $KERNEL_PATCHES/susfs/task_mmu.c_fix-k6.6.58.patch
-  elif [ $(echo "$LINUX_VERSION_CODE" | head -c2) -eq 61 ]; then
+  elif [[ $(echo "$LINUX_VERSION_CODE" | head -c2) -eq 61 ]]; then
     patch -p1 < $KERNEL_PATCHES/susfs/fs_proc_base.c-fix-k6.1.patch
-  elif [ $(echo "$LINUX_VERSION_CODE" | head -c3) -eq 510 ]; then
+  elif [[ $(echo "$LINUX_VERSION_CODE" | head -c3) -eq 510 ]]; then
     patch -p1 < $KERNEL_PATCHES/susfs/pershoot-susfs-k5.10.patch
   fi
-  if [ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]; then
+  if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
     patch -p1 < $KERNEL_PATCHES/susfs/fix-statfs-crc-mismatch-susfs.patch
   fi
   SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
@@ -183,9 +183,9 @@ else
 fi
 
 # set localversion
-if [ $TODO == "kernel" ]; then
+if [[ $TODO == "kernel" ]]; then
   LATEST_COMMIT_HASH=$(git rev-parse --short HEAD)
-  if [ $STATUS == "BETA" ]; then
+  if [[ $STATUS == "BETA" ]]; then
     SUFFIX="$LATEST_COMMIT_HASH"
   else
     SUFFIX="${RELEASE}@${LATEST_COMMIT_HASH}"
@@ -200,7 +200,7 @@ export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
 export KBUILD_BUILD_TIMESTAMP=$(date)
 export KCFLAGS="-w"
-if [ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]; then
+if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
   MAKE_ARGS=(
     LLVM=1
     ARCH=arm64
@@ -223,7 +223,7 @@ fi
 
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
 MODULE_SYMVERS="$OUTDIR/Module.symvers"
-if [ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]; then
+if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
   KMI_CHECK="$WORKDIR/py/kmi-check-6.x.py"
 else
   KMI_CHECK="$WORKDIR/py/kmi-check-5.x.py"
@@ -241,22 +241,22 @@ EOF
 
 ## Build GKI
 log "Generating config..."
-make ${MAKE_ARGS[@]} $KERNEL_DEFCONFIG
+make ${MAKE_ARGS[[@]]} $KERNEL_DEFCONFIG
 
-if [ "$DEFCONFIG_TO_MERGE" ]; then
+if [[ "$DEFCONFIG_TO_MERGE" ]]; then
   log "Merging configs..."
-  if [ -f "scripts/kconfig/merge_config.sh" ]; then
+  if [[ -f "scripts/kconfig/merge_config.sh" ]]; then
     for config in $DEFCONFIG_TO_MERGE; do
-      make ${MAKE_ARGS[@]} scripts/kconfig/merge_config.sh $config
+      make ${MAKE_ARGS[[@]]} scripts/kconfig/merge_config.sh $config
     done
   else
     error "scripts/kconfig/merge_config.sh does not exist in the kernel source"
   fi
-  make ${MAKE_ARGS[@]} olddefconfig
+  make ${MAKE_ARGS[[@]]} olddefconfig
 fi
 
 # Upload defconfig if we are doing defconfig
-if [ $TODO == "defconfig" ]; then
+if [[ $TODO == "defconfig" ]]; then
   log "Uploading defconfig..."
   upload_file $OUTDIR/.config
   exit 0
@@ -264,10 +264,10 @@ fi
 
 # Build the actual kernel
 log "Building kernel..."
-make ${MAKE_ARGS[@]}
+make ${MAKE_ARGS[[@]]}
 
 # Check KMI Function symbol
-if [ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]; then
+if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
   $KMI_CHECK "$KSRC/android/abi_gki_aarch64.stg" "$MODULE_SYMVERS" || true
 else
   $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS" || true
@@ -281,7 +281,7 @@ log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
 git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
 # Set kernel string in anykernel
-if [ $STATUS == "BETA" ]; then
+if [[ $STATUS == "BETA" ]]; then
   BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
   AK3_ZIP_NAME=${AK3_ZIP_NAME//BUILD_DATE/$BUILD_DATE}
   AK3_ZIP_NAME=${AK3_ZIP_NAME//-REL/}
@@ -303,13 +303,13 @@ cp $KERNEL_IMAGE .
 zip -r9 $WORKDIR/$AK3_ZIP_NAME ./*
 cd $OLDPWD
 
-if [ $STATUS != "BETA" ]; then
+if [[ $STATUS != "BETA" ]]; then
   echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >> $GITHUB_ENV
   mkdir -p $WORKDIR/artifacts
   mv $WORKDIR/*.zip $WORKDIR/artifacts
 fi
 
-if [ $LAST_BUILD == "true" ] && [ $STATUS != "BETA" ]; then
+if [[ $LAST_BUILD == "true" ]] && [[ $STATUS != "BETA" ]]; then
   (
     echo "LINUX_VERSION=$LINUX_VERSION"
     echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/raw/gki-android15-6.6/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
@@ -318,7 +318,7 @@ if [ $LAST_BUILD == "true" ] && [ $STATUS != "BETA" ]; then
   ) >> $WORKDIR/artifacts/info.txt
 fi
 
-if [ $STATUS == "BETA" ]; then
+if [[ $STATUS == "BETA" ]]; then
   upload_file "$WORKDIR/$AK3_ZIP_NAME" "$text"
   upload_file "$WORKDIR/build.log"
 else

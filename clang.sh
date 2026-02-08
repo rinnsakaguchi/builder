@@ -30,14 +30,14 @@ show_usage() {
 get_latest_clang() {
   local url="$1"
   local grp_expr="$2"
-  [ -z "$grp_expr" ] && grp_expr=".tar.gz"
+  [[ -z "$grp_expr" ]] && grp_expr=".tar.gz"
   curl -s "$url" | grep "browser_download_url" | grep "$grp_expr" | cut -d '"' -f 4
   return $?
 }
 
 case "$1" in
   "slim")
-    curl -s "$SLIM_REPO" | grep -oP 'llvm-[\d.]+-x86_64\.tar\.xz' | sort -V | tail -n1 | sed "s|^|$SLIM_REPO|"
+    curl -s "$SLIM_REPO" | grep -oP 'llvm-[[\d.]]+-x86_64\.tar\.xz' | sort -V | tail -n1 | sed "s|^|$SLIM_REPO|"
     ;;
   "rv")
     get_latest_clang "$RV_REPO"
@@ -64,7 +64,7 @@ case "$1" in
     get_latest_clang "$DV_REPO" ".xz"
     ;;
   *)
-    if [ -z $1 ]; then
+    if [[ -z $1 ]]; then
       show_usage
     else
       echo "Invalid clang name '$1'"
