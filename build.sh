@@ -240,18 +240,18 @@ EOF
 
 ## Build GKI
 log "Generating config..."
-make ${MAKE_ARGS[[@]]} $KERNEL_DEFCONFIG
+make ${MAKE_ARGS[@]} $KERNEL_DEFCONFIG
 
 if [[ "$DEFCONFIG_TO_MERGE" ]]; then
   log "Merging configs..."
   if [[ -f "scripts/kconfig/merge_config.sh" ]]; then
     for config in $DEFCONFIG_TO_MERGE; do
-      make ${MAKE_ARGS[[@]]} scripts/kconfig/merge_config.sh $config
+      make ${MAKE_ARGS[@]} scripts/kconfig/merge_config.sh $config
     done
   else
     error "scripts/kconfig/merge_config.sh does not exist in the kernel source"
   fi
-  make ${MAKE_ARGS[[@]]} olddefconfig
+  make ${MAKE_ARGS[@]} olddefconfig
 fi
 
 # Upload defconfig if we are doing defconfig
@@ -263,7 +263,7 @@ fi
 
 # Build the actual kernel
 log "Building kernel..."
-make ${MAKE_ARGS[[@]]}
+make ${MAKE_ARGS[@]}
 
 # Check KMI Function symbol
 if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
