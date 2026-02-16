@@ -79,7 +79,7 @@ config() {
 
 # Logging function
 log() {
-  echo -e "[[LOG]] $*"
+  echo -e "[LOG] $*"
 }
 
 error() {
@@ -90,7 +90,7 @@ error() {
 ERROR: $*
 EOF
   )
-  echo -e "[[ERROR]] $*"
+  echo -e "[ERROR] $*"
   send_msg "$err_txt"
   upload_file "$WORKDIR/build.log"
   exit 1
