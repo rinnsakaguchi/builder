@@ -31,7 +31,7 @@ elif [[ "$KVER" == "6.1" ]]; then
   KERNEL_BRANCH="android14-6.1-lts"
 elif [[ "$KVER" == "5.10" ]]; then
   KERNEL_REPO="https://github.com/linastorvaldz/kernel-android12-5.10"
-  KERNEL_BRANCH="master"
+  KERNEL_BRANCH="rebase"
 fi
 
 DEFCONFIG_TO_MERGE=""
