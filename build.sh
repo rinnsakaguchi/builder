@@ -142,7 +142,6 @@ if ksu_included; then
 
   cd KernelSU-Next
   patch -p1 < $KERNEL_PATCHES/ksu/ksun-add-more-managers-support.patch
-  patch -p1 < $KERNEL_PATCHES/ksu/kernel-ifdef-MODULE-for-__stack_chk_guard.patch
   cd $OLDPWD
 fi
 
