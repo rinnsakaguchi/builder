@@ -46,7 +46,7 @@ KERNEL_PATCHES="$WORKDIR/kernel-patches"
 
 # Handle error
 exec > >(tee $WORKDIR/build.log) 2>&1
-trap 'error "Failed at line $LINENO [[$BASH_COMMAND]]"' ERR
+trap 'error "Failed at line $LINENO [$BASH_COMMAND]"' ERR
 
 # Import functions
 source $WORKDIR/functions.sh
@@ -183,11 +183,10 @@ fi
 
 # set localversion
 if [[ $TODO == "kernel" ]]; then
-  LATEST_COMMIT_HASH=$(git rev-parse --short HEAD)
   if [[ $STATUS == "BETA" ]]; then
-    SUFFIX="$LATEST_COMMIT_HASH"
+    SUFFIX=$(git rev-parse --short HEAD)
   else
-    SUFFIX="${RELEASE}@${LATEST_COMMIT_HASH}"
+    SUFFIX="$RELEASE"
   fi
   config --set-str CONFIG_LOCALVERSION "-$KERNEL_NAME/$SUFFIX"
   config --disable CONFIG_LOCALVERSION_AUTO
