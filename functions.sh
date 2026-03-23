@@ -62,7 +62,7 @@ ksu_included() {
 # susfs_included() function
 # Type: bool
 susfs_included() {
-  [[ $KSU_SUSFS == "true" ]]
+  echo "$VARIANT" | grep -qi 'susfs'
   return $?
 }
 

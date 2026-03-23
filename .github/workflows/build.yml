@@ -5,11 +5,7 @@ on:
     inputs:
       TODO:
         type: string
-      KSU:
-        type: string
-      KSU_SUSFS:
-        type: string
-      KSU_MANUAL_HOOK:
+      VARIANT:
         type: string
       LAST_BUILD:
         type: string
@@ -20,39 +16,22 @@ on:
     inputs:
       TODO:
         description: To do
-        default: ""
+        default: "kernel"
         type: choice
         options:
           - "kernel"
           - "defconfig"
-
-      KSU:
-        description: KernelSU
-        default: ""
+      VARIANT:
+        description: kernel variants
+        default: "KSU"
         type: choice
         options:
-          - "no"
-          - "yes"
-
-      KSU_SUSFS:
-        description: Include SUSFS?
-        default: "false"
-        type: choice
-        options:
-          - "true"
-          - "false"
-
-      KSU_MANUAL_HOOK:
-        description: Use KSU Manual Hooks?
-        default: "false"
-        type: choice
-        options:
-          - "true"
-          - "false"
-
+          - "VNL"
+          - "KSU"
+          - "KSUS"
       KERNEL_VERSION:
         description: Which kernel version do you want to build?
-        default: ""
+        default: "5.10"
         type: choice
         options:
           - "6.6"
@@ -62,6 +41,14 @@ on:
 env:
   MAN_DISABLE: true
   DEBIAN_FRONTEND: noninteractive
+  GIT_CLONE_PROTECTION_ACTIVE: false
+  TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }} # telegram chat id
+  TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }} # telegram bot token
+  GH_TOKEN: ${{ secrets.GH_TOKEN }} # github token
+  VARIANT: ${{ inputs.KSU }}
+  LAST_BUILD: ${{ inputs.LAST_BUILD }}
+  TODO: ${{ inputs.TODO }}
+  KVER: ${{ inputs.KERNEL_VERSION }}
 
 jobs:
   build:
@@ -77,20 +64,11 @@ jobs:
         run: |
           if [ "${{ toJson(github.event.inputs) }}" == "null" ]; then
             echo "STATUS=RELEASE" >> $GITHUB_ENV
-            echo "TRIGGER=workflow_call" >> $GITHUB_ENV
           else
             echo "STATUS=BETA" >> $GITHUB_ENV
-            echo "TRIGGER=workflow_dispatch" >> $GITHUB_ENV
           fi
 
       - name: Validate Inputs and Secrets
-        env:
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }} # telegram chat id
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }} # telegram bot token
-          GH_TOKEN: ${{ secrets.GH_TOKEN }} # github token
-          KSU: ${{ inputs.KSU }}
-          KSU_SUSFS: ${{ inputs.KSU_SUSFS }}
-          KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
         run: |
           _error() {
               echo "❌ ERROR: $*"
@@ -109,14 +87,6 @@ jobs:
             _error "Missing GH_TOKEN secret (GitHub PAT)"
           fi
 
-          # KernelSU
-          if [[ $KSU == "no" && $KSU_SUSFS == "true" ]]; then
-              _error "Cannot use SuSFS without KernelSU"
-          fi
-          if [[ $KSU == "no" && $KSU_MANUAL_HOOK == "true" ]]; then
-            _error "Cannot use KSU Manual Hooks without KernelSU!"
-          fi
-
           if [[ $ret -gt 0 ]]; then
             exit $ret
           fi
@@ -127,43 +97,19 @@ jobs:
           sudo apt-get install -y gh bc bison flex libssl-dev libelf-dev dwarves cpio
           pip install lxml
 
-#     - name: Enable swap with high priority and swappiness
-#       run: |
-#         sudo swapoff -a
-#         sudo fallocate -l 12G /swapfile
-#         sudo chmod 600 /swapfile
-#         sudo mkswap /swapfile
-#         sudo swapon /swapfile --priority 100
-#         sudo sysctl vm.swappiness=100
-#         free -h
-#         echo
-#         swapon --show
-
       - name: Run Build Script
-        env:
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }} # telegram chat id
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }} # telegram bot token
-          GH_TOKEN: ${{ secrets.GH_TOKEN }} # github token
-          KSU: ${{ inputs.KSU }}
-          KSU_SUSFS: ${{ inputs.KSU_SUSFS }}
-          KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
-          LAST_BUILD: ${{ inputs.LAST_BUILD }}
-          TODO: ${{ inputs.TODO }}
-          KVER: ${{ inputs.KERNEL_VERSION }}
         run: |
-          export GIT_CLONE_PROTECTION_ACTIVE=false
           chmod +x *.sh py/*.py
           ./build.sh
 
-      - name: Upload Artifacts (ZIP & IMG)
+      - name: Upload AnyKernel artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BASE_NAME }}-${{ github.run_number }}
           path: |
             artifacts/*.zip
-            artifacts/*.img
 
-      - name: Upload Artifacts (Info File)
+      - name: Upload Info.txt artifact
         uses: actions/upload-artifact@v4
         with:
           name: info-${{ github.run_number }}

@@ -8,18 +8,16 @@ jobs:
     strategy:
       matrix:
         variant:
-          - { name: "VNL", KSU: "no", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSU", KSU: "yes", KSU_SUSFS: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSU SuSFS", KSU: "yes", KSU_SUSFS: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "true" }
+          - { name: "VNL", VARIANT: "VNL", LAST_BUILD: "false" }
+          - { name: "KSU", VARIANT: "KSU", LAST_BUILD: "false" }
+          - { name: "KSU SuSFS", VARIANT: "KSUS", SLAST_BUILD: "true" }
 
     name: Build ${{ matrix.variant.name }} variant
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      KSU: ${{ matrix.variant.KSU }}
-      KSU_SUSFS: ${{ matrix.variant.KSU_SUSFS }}
+      VARIANT: ${{ matrix.variant.VARIANT}}
       LAST_BUILD: ${{ matrix.variant.LAST_BUILD }}
-      KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}
       TODO: "kernel"
       KERNEL_VERSION: "5.10"
 

@@ -66,11 +66,7 @@ cd $WORKDIR
 
 # Set Kernel variant
 log "Setting Kernel variant..."
-case "$KSU" in
-  "yes") VARIANT="KSU" ;;
-  "no") VARIANT="VNL" ;;
-esac
-susfs_included && VARIANT+="+SuSFS"
+susfs_included && VARIANT="KSU+SuSFS"
 
 # Replace Placeholder in zip name
 AK3_ZIP_NAME=${AK3_ZIP_NAME//KVER/$LINUX_VERSION}
