@@ -10,7 +10,7 @@ jobs:
         variant:
           - { name: "VNL", VARIANT: "VNL", LAST_BUILD: "false" }
           - { name: "KSU", VARIANT: "KSU", LAST_BUILD: "false" }
-          - { name: "KSU SuSFS", VARIANT: "KSUS", SLAST_BUILD: "true" }
+          - { name: "KSU SuSFS", VARIANT: "KSUS", LAST_BUILD: "true" }
 
     name: Build ${{ matrix.variant.name }} variant
     uses: ./.github/workflows/build.yml
