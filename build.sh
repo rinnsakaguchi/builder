@@ -120,8 +120,25 @@ cd $KSRC
 
 ## KernelSU setup
 if ksu_included; then
-  install_ksu 'linastorvaldz/KernelSU' 'main'
+  # Remove existing KernelSU drivers
+  for KSU_PATH in drivers/staging/kernelsu drivers/kernelsu KernelSU KernelSU-Next; do
+    if [[ -d $KSU_PATH ]]; then
+      log "KernelSU driver found in $KSU_PATH, Removing..."
+      KSU_DIR=$(dirname "$KSU_PATH")
+
+      [[ -f "$KSU_DIR/Kconfig" ]] && sed -i '/kernelsu/d' $KSU_DIR/Kconfig
+      [[ -f "$KSU_DIR/Makefile" ]] && sed -i '/kernelsu/d' $KSU_DIR/Makefile
+
+      rm -rf $KSU_PATH
+    fi
+  done
+
+  install_ksu 'pershoot/KernelSU-Next' 'dev-susfs'
   config --enable CONFIG_KSU
+
+  cd KernelSU-Next
+  patch -p1 < $KERNEL_PATCHES/ksu/ksun-add-more-managers-support.patch
+  cd $OLDPWD
 fi
 
 # SUSFS
