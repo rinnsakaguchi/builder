@@ -45,7 +45,7 @@ env:
   TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }} # telegram chat id
   TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }} # telegram bot token
   GH_TOKEN: ${{ secrets.GH_TOKEN }} # github token
-  VARIANT: ${{ inputs.KSU }}
+  VARIANT: ${{ inputs.VARIANT }}
   LAST_BUILD: ${{ inputs.LAST_BUILD }}
   TODO: ${{ inputs.TODO }}
   KVER: ${{ inputs.KERNEL_VERSION }}
