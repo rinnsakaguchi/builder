@@ -194,26 +194,15 @@ export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
 export KBUILD_BUILD_TIMESTAMP=$(date)
 export KCFLAGS="-w"
-if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
-  MAKE_ARGS=(
-    LLVM=1
-    ARCH=arm64
-    CROSS_COMPILE=aarch64-linux-gnu-
-    CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
-    -j$(nproc --all)
-    O=$OUTDIR
-  )
-else
-  MAKE_ARGS=(
-    LLVM=1
-    LLVM_IAS=1
-    ARCH=arm64
-    CROSS_COMPILE=aarch64-linux-gnu-
-    CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
-    -j$(nproc --all)
-    O=$OUTDIR
-  )
-fi
+MAKE_ARGS=(
+  LLVM=1
+  LLVM_IAS=1
+  ARCH=arm64
+  CROSS_COMPILE=aarch64-linux-gnu-
+  CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+  -j$(nproc --all)
+  O=$OUTDIR
+)
 
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
 MODULE_SYMVERS="$OUTDIR/Module.symvers"
