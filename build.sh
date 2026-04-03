@@ -180,7 +180,8 @@ fi
 # set localversion
 if [[ $TODO == "kernel" ]]; then
   if [[ $STATUS == "BETA" ]]; then
-    SUFFIX=$(git rev-parse --short HEAD)
+    LAST_COMMIT=$(git rev-parse HEAD)
+    SUFFIX=$(git rev-parse --short $LAST_COMMIT)
   else
     SUFFIX="$RELEASE"
   fi
@@ -214,11 +215,12 @@ fi
 
 text=$(
   cat << EOF
-🐧 *Linux Version*: $LINUX_VERSION
-📅 *Build Date*: $KBUILD_BUILD_TIMESTAMP
-📛 *KernelSU*: ${KSU}
-ඞ *SuSFS*: $(susfs_included && echo "$SUSFS_VERSION" || echo "None")
-🔰 *Compiler*: $COMPILER_STRING
+*Linux Version*: \`${LINUX_VERSION}\`
+*Build Date*: \`${KBUILD_BUILD_TIMESTAMP}\`
+*Variant*: \`${VARIANT}\`
+*SuSFS*: \`$(susfs_included && echo "$SUSFS_VERSION" || echo "None")\`
+*Compiler*: \`${COMPILER_STRING}\`
+*Last Commit*: [$LAST_COMMIT](${KERNEL_REPO}/commit/${LAST_COMMIT})
 EOF
 )
 
