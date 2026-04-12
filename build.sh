@@ -6,7 +6,7 @@ WORKDIR="$(pwd)"
 if [[ "$KVER" == "6.6" ]]; then
   RELEASE="v0.3"
 elif [[ "$KVER" == "5.10" ]]; then
-  RELEASE="v0.5"
+  RELEASE="v0.6"
 elif [[ "$KVER" == "6.1" ]]; then
   RELEASE="v0.1"
 fi
