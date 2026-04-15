@@ -22,6 +22,9 @@ jobs:
       KERNEL_VERSION: "5.10"
 
   release:
+    permissions:
+      contents: write
+
     name: Create Unified Release
     needs: build
     runs-on: ubuntu-latest
