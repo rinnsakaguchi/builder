@@ -166,12 +166,12 @@ if susfs_included; then
     patch -p1 < "$KERNEL_PATCHES/susfs/task_mmu.c_fix-k6.6.58.patch"
   elif [[ $(echo "$LINUX_VERSION_CODE" | head -c2) -eq 61 ]]; then
     patch -p1 < "$KERNEL_PATCHES/susfs/fs_proc_base.c-fix-k6.1.patch"
-  elif [[ $(echo "$LINUX_VERSION_CODE" | head -c3) -eq 510 ]]; then
-    patch -p1 < "$KERNEL_PATCHES/susfs/pershoot-susfs-k5.10.patch"
   fi
   if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
     patch -p1 < "$KERNEL_PATCHES/susfs/fix-statfs-crc-mismatch-susfs.patch"
   fi
+  pershoot_susfs '3a288f01c379be4454ecaa0cb5d2d2494ba719e6'
+  pershoot_susfs '98b3fc2b178ec638d968966771fbf82b5cbb72b1'
   SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
   config --enable CONFIG_KSU_SUSFS
 else
