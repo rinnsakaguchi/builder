@@ -71,15 +71,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-            # Get the latest tag, handle case where no tags exist
-            LATEST_TAG=$(gh api repos/$RELEASE_REPO/tags --jq '.[0].name' 2>/dev/null || echo "")
-
-            # Handle case when $LATEST_TAG doesn't contain $KERNEL_NAME or is empty
-            if [[ -z "$LATEST_TAG" ]] || ! echo "$LATEST_TAG" | grep -q "$KERNEL_NAME"; then
-                RELEASE_TAG="$KERNEL_NAME-r1"
-            else
-                RELEASE_TAG="$(echo "$LATEST_TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')"
-            fi
+            RELEASE_TAG="$KERNEL_NAME-$RELEASE-$KVER"
 
             echo "Release tag: $RELEASE_TAG"
             echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
@@ -90,10 +82,10 @@ jobs:
           repository: ${{ env.RELEASE_REPO }}
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
-          prerelease: true
+          prerelease: false
           files: release_files/**/*
           body: |
-            ### 📢 ${{ env.RELEASE_TAG }} Builds
+            ### ${{ env.KERNEL_NAME }} ${{ env.RELEASE }} - ${{ env.KVER }}
             -> Linux ${{ env.LINUX_VERSION }} (android12-5.10-lts)
             -> SUSFS ඞ ${{ env.SUSFS_VERSION }}
         env:

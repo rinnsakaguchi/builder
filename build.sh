@@ -63,6 +63,7 @@ cd "$KSRC"
 LINUX_VERSION=$(make kernelversion)
 LINUX_VERSION_CODE=${LINUX_VERSION//./}
 DEFCONFIG_FILE=$(find ./arch/arm64/configs -name "$KERNEL_DEFCONFIG")
+k_lastcommit=$(git rev-parse --short HEAD)
 cd "$WORKDIR"
 
 # Set Kernel variant
@@ -181,8 +182,7 @@ fi
 # set localversion
 if [[ $TODO == "kernel" ]]; then
   if [[ $STATUS == "BETA" ]]; then
-    LAST_COMMIT=$(git rev-parse HEAD)
-    SUFFIX=$(git rev-parse --short "$LAST_COMMIT")
+    SUFFIX="$k_lastcommit"
   else
     SUFFIX="$RELEASE"
   fi
@@ -217,12 +217,12 @@ fi
 
 text=$(
   cat << EOF
-*Linux Version*: \`${LINUX_VERSION}\`
+*Kernel Version*: \`${LINUX_VERSION}\`
 *Build Date*: \`${KBUILD_BUILD_TIMESTAMP}\`
 *Variant*: \`${VARIANT}\`
-*SuSFS*: \`$(susfs_included && echo "$SUSFS_VERSION" || echo "None")\`
+*SuSFS*: \`$(susfs_included && echo "${SUSFS_VERSION}" || echo "None")\`
 *Compiler*: \`${COMPILER_STRING}\`
-*Last Commit*: [$LAST_COMMIT](${KERNEL_REPO}/commit/${LAST_COMMIT})
+*Kernol commit*: [${k_lastcommit}](${KERNEL_REPO}/commit/${k_lastcommit})
 EOF
 )
 
@@ -310,6 +310,8 @@ if [[ $LAST_BUILD == "true" ]] && [[ $STATUS != "BETA" ]]; then
     echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/raw/gki-android15-6.6/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
     echo "KERNEL_NAME=$KERNEL_NAME"
     echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")"
+    echo "RELEASE=$RELEASE"
+    echo "KVER=$KVER"
   ) >> "$WORKDIR/artifacts/info.txt"
 fi
 
