@@ -173,14 +173,14 @@ jobs:
           echo "Creating Release Tag: $RELEASE_TAG"
           
           gh release create "$RELEASE_TAG" \
-            --repo "rinnsakaguchi/GKI-Release" \
+            --repo "rinnsakaguchi/builder" \
             --title "$KERNEL_NAME | $BUILD_DATE" \
             --notes "Automated release build for $KERNEL_NAME branches." || true
             
           sleep 3
             
           gh release upload "$RELEASE_TAG" all-artifacts/*.zip \
-            --repo "rinnsakaguchi/GKI-Release" \
+            --repo "rinnsakaguchi/builder" \
             --clobber
 
       - name: Send Release Notification to Telegram
