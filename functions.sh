@@ -13,7 +13,7 @@ upload_file() {
 
   curl -s -F "document=@${FILE}" \
     -F "chat_id=${TG_CHAT_ID}" \
-    -F "message_thread_id=8" \
+    -F "message_thread_id=7" \
     -F "caption=${CAPTION}" \
     -F "parse_mode=markdown" \
     -F "disable_web_page_preview=true" \
@@ -25,7 +25,7 @@ send_msg() {
   local MESSAGE="$1"
   curl -s -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
     -d "chat_id=$TG_CHAT_ID" \
-    -d "message_thread_id=8" \
+    -d "message_thread_id=7" \
     -d "disable_web_page_preview=true" \
     -d "parse_mode=markdown" \
     -d "text=$MESSAGE"
@@ -46,13 +46,13 @@ use_bbrplus() {
 # thin
 use_thin() {
   echo "CONFIG_LTO_CLANG=y" >> "$DEFCONFIG"
-  echo "CONFIG_LTO_CLANG_FULL=y" >> "$DEFCONFIG"
+  echo "CONFIG_LTO_CLANG_THIN=y" >> "$DEFCONFIG"
 }
 
 # full
 use_full() {
   echo "CONFIG_LTO_CLANG=y" >> "$DEFCONFIG"
-  echo "CONFIG_LTO_CLANG_THIN=y" >> "$DEFCONFIG"
+  echo "CONFIG_LTO_CLANG_FULL=y" >> "$DEFCONFIG"
 }
 
 # KernelSU-related functions
@@ -79,7 +79,7 @@ ksu_included() {
 
 # susfs
 susfs_included() {
-  [[ "$VARIANT" == "KSUS" ]]
+  [[ "$VARIANT" == "SUSFS" ]]
   return $?
 }
 

@@ -86,35 +86,28 @@ env:
   MAN_DISABLE: true
   DEBIAN_FRONTEND: noninteractive
   BASE_NAME: Kinosaki
-  # Secrets
   BUILD_TYPE: ${{ github.event.inputs.build_type }}
-  TG_TOKEN: ${{ secrets.TG_TOKEN }}
+  TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
   TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-  
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
-        variant: ${{ 
-          inputs.VARIANT == 'ALL' && fromJson('["KSU","VNL","SUSFS"]') 
-          || fromJson(format('["{0}"]', inputs.VARIANT || 'SUSFS')) 
-          }}
+        variant: ${{ inputs.VARIANT == 'ALL' && fromJson('["KSU","VNL","SUSFS"]') || fromJson(format('["{0}"]', inputs.VARIANT || 'SUSFS')) }}
 
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Setup GitHub CLI Auth
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh auth status
+        run: gh auth status
 
       - name: Free Disk Space
         run: |
@@ -130,16 +123,13 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            bc bison flex libssl-dev libelf-dev dwarves cpio aria2 \
-            zip unzip libxml2 libxml2-dev device-tree-compiler \
-            build-essential gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev dwarves cpio aria2 zip unzip libxml2 libxml2-dev device-tree-compiler build-essential gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
           pip install lxml
 
       - name: Run Build Script
         env:
           VARIANT: ${{ matrix.variant }}
-          KERNELNAME: ${{ inputs.KERNELNAME || 'Kinosaki' }}
+          KERNEL_NAME: ${{ inputs.KERNELNAME || 'Kinosaki' }}
           REPONYA: ${{ inputs.kernelrepo || 'main' }}
           LTOBUILD: ${{ inputs.LTOBUILD || 'full' }}
           CLANGURL: ${{ inputs.CLANGURL || '12' }}
@@ -148,7 +138,6 @@ jobs:
           KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'lts' }}
           TODO: ${{ inputs.TODO || 'kernel' }}
         run: |
-          echo "Starting build for variant: $VARIANT"
           chmod +x *.sh
           if [ -d "py" ]; then chmod +x py/*.py; fi
           ./build.sh
@@ -157,5 +146,20 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-${{ matrix.variant }}-${{ github.run_number }}
+          name: kernel-${{ matrix.variant }}
           path: artifacts/*
+
+  notify:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send Final Notification
+        run: |
+          RELEASE_TAG="${{ inputs.KERNELNAME || 'Kinosaki' }}-$(date +%Y%m%d)"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/$RELEASE_TAG"
+          MSG="🚀 *Build Completed!*%0A%0A📱 *Kernel*: \`${{ inputs.KERNELNAME || 'Kinosaki' }}\`%0A🔖 *Tag*: \`$RELEASE_TAG\`%0A%0A🔗 [Download on GitHub]($RELEASE_URL)"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TG_CHAT_ID }}" \
+            -d "parse_mode=markdown" \
+            -d "text=$MSG"

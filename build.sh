@@ -4,14 +4,9 @@ OUTDIR="$WORKDIR/out"
 KSRC="$WORKDIR/ksrc"
 KERNEL_PATCHES="$WORKDIR/patch"
 KERNEL_BRANCH="$KERNELBRANCH"
+KERNEL_NAME="${KERNEL_NAME:-Kinosaki}"
 
-if [ "$KERNEL_BRANCH" = "Kinosaki" ]; then
-    KERNEL_NAME="$KERNEL_BRANCH"
-else
-    KERNEL_NAME="$KERNELNAME"
-fi
-
-# Maintener
+# Maintainer
 USER="dev"
 HOST="celoxx"
 
@@ -66,9 +61,8 @@ case "$CLANGURL" in
     neutron)
         echo "Using clang neutron 19"
         ;;
-
     gf-clang)
-        echo "Using GreenForce Clang"
+        echo "Using GF-Clang"
         ;;
     *)
         echo "Invalid CLANGURL: $CLANGURL"
@@ -89,9 +83,8 @@ git clone -q --depth=1 --single-branch -b "$KERNEL_BRANCH" "$KERNEL_REPO" "$KSRC
 # Gather kernel version info
 cd "$KSRC"
 LINUX_VERSION=$(make kernelversion)
-LINUX_VERSION_CODE=${LINUX_VERSION//./}
 KVER="$LINUX_VERSION"
-# Extract only the major version digit for numeric comparison
+# Extract only the major version digit for numeric comparison safely
 LINUX_MAJOR="${LINUX_VERSION%%.*}"
 
 DEFCONFIG_FILE=$(find "$KSRC/arch/arm64/configs" -name "$KERNEL_DEFCONFIG" -print -quit)
@@ -105,15 +98,12 @@ case "$VARIANT" in
   VNL)
     log "Building Vanilla"
     ;;
-
   KSU)
     log "Building KernelSU"
     ;;
-
   SUSFS)
     log "Building SuSFS"
     ;;
-
   *)
     error "Unknown VARIANT: $VARIANT"
     ;;
@@ -123,13 +113,9 @@ esac
 CLANG_DIR="$WORKDIR/clang"
 CLANG_BIN="${CLANG_DIR}/bin"
 
-if [ "$CLANGURL" != "neutron" ] && \
-   [ "$CLANGURL" != "gf-clang" ]; then
-
+if [ "$CLANGURL" != "neutron" ] && [ "$CLANGURL" != "gf-clang" ]; then
     log "Downloading Google Clang..."
-
     mkdir -p "$CLANG_DIR"
-
     aria2c -x16 -s16 -k1M "$CLANG_URL" -o clang-archive
 
     case "$(basename "$CLANG_URL")" in
@@ -144,57 +130,44 @@ if [ "$CLANGURL" != "neutron" ] && \
             exit 1
             ;;
     esac
-
     rm -f clang-archive
 
-    if [[ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]] \
-        && [[ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]]; then
-
+    # Improved nested directory check
+    if [ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ] && \
+       [ $(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]; then
         SINGLE_DIR=$(find "$CLANG_DIR" -mindepth 1 -maxdepth 1 -type d)
-
         mv "$SINGLE_DIR"/* "$CLANG_DIR"/
         rm -rf "$SINGLE_DIR"
     fi
 
 elif [ "$CLANGURL" = "gf-clang" ]; then
-
     log "Using GreenForce Clang..."
-
     pushd "$WORKDIR" >/dev/null
-
     bash <(wget -qO- https://raw.githubusercontent.com/greenforce-project/greenforce_clang/refs/heads/main/get_clang.sh)
-
     if [ ! -d "$WORKDIR/greenforce-clang" ]; then
         error "greenforce-clang directory not found!"
         exit 1
     fi
-
     rm -rf "$CLANG_DIR"
     mv "$WORKDIR/greenforce-clang" "$CLANG_DIR"
-
     popd >/dev/null
 
 else
-
     log "Using Neutron Clang via Antman..."
-
     mkdir -p "$CLANG_DIR"
-
     pushd "$CLANG_DIR" >/dev/null
-
     if [[ ! -x "./antman" ]]; then
         curl -LO https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman
         chmod +x antman
     fi
-
     ./antman -S || warn "antman -S failed"
-
     if ./antman --patch=glibc; then
         log "glibc patch applied"
     else
         warn "glibc patch failed (non-fatal)"
     fi
-
+    # Sync bin path for antman neutron
+    [[ -d "./bin" ]] || CLANG_BIN="$CLANG_DIR"
     popd >/dev/null
 fi
 
@@ -208,14 +181,14 @@ git clone --depth=1 -q \
 
 export PATH="${CLANG_BIN}:${GAS_DIR}:$PATH"
 
-COMPILER_STRING=$(clang --version | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
+COMPILER_STRING=$("${CLANG_BIN}/clang" --version | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 
 cd "$KSRC"
 
 # Variant setup
 DEFCONFIG="$DEFCONFIG_FILE"
 
-# Clean KSU
+# Clean KSU Configs safely
 sed -i '/CONFIG_KSU/d' "$DEFCONFIG"
 sed -i '/CONFIG_KSU_SUSFS/d' "$DEFCONFIG"
 
@@ -226,9 +199,11 @@ if [ "$VARIANT" == "KSU" ] || [ "$VARIANT" == "SUSFS" ]; then
     # Patch All Managers
     echo "Patching All Managers Support..."
     if [ -d "KernelSU-Next" ]; then
-        patch -p1 -d KernelSU-Next < $KERNEL_PATCHES/ksu-manager.patch || exit 1
+        patch -p1 -d KernelSU-Next < "$KERNEL_PATCHES/ksu-manager.patch" || exit 1
+    elif [ -d "drivers/kernelsu" ]; then
+        patch -p1 -d drivers/kernelsu < "$KERNEL_PATCHES/ksu-manager.patch" || exit 1
     else
-        echo "Error: KernelSU-Next directory not found!" && exit 1
+        echo "Error: KernelSU directory not found!" && exit 1
     fi
 fi
 
@@ -248,11 +223,12 @@ elif [ "$VARIANT" == "SUSFS" ]; then
     echo "CONFIG_KSU=y" >> "$DEFCONFIG"
     echo "CONFIG_KSU_SUSFS=y" >> "$DEFCONFIG"
 
-    if [ -f "drivers/kernelsu/supercalls.c" ]; then
-        sed -i 's|#ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME|#if 0 /* Disabled to fix build */|' drivers/kernelsu/supercalls.c || true
+    # Fix uname spoof detection for SuSFS KSU-Next/KSU-Legacy
+    KSU_SU_FILE=$(find drivers/ -name "supercalls.c" -print -quit)
+    if [ -f "$KSU_SU_FILE" ]; then
+        sed -i 's|#ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME|#if 0 /* Disabled to fix build */|' "$KSU_SU_FILE" || true
     fi
     echo "ENABLE_SUSFS=true" >> "$GITHUB_ENV"
-
 else
     echo "ENABLE_SUSFS=false" >> "$GITHUB_ENV"
 fi
@@ -268,27 +244,24 @@ echo "CONFIG_HZ_$CONFIGHZ=y" >> "$DEFCONFIG"
 echo "CONFIG_HZ=$CONFIGHZ" >> "$DEFCONFIG"
 
 if [ "$TCPCONG" = "westwood" ]; then
-echo "CONFIG_TCP_CONG_WESTWOOD=y" >> "$DEFCONFIG"
-echo "CONFIG_DEFAULT_WESTWOOD=y" >> "$DEFCONFIG"
-echo 'CONFIG_DEFAULT_TCP_CONG="westwood"' >> "$DEFCONFIG"
-
+    echo "CONFIG_DEFAULT_WESTWOOD=y" >> "$DEFCONFIG"
+    echo 'CONFIG_DEFAULT_TCP_CONG="westwood"' >> "$DEFCONFIG"
 elif [ "$TCPCONG" = "bbrplus" ]; then
-echo "CONFIG_DEFAULT_BBRPLUS=y" >> "$DEFCONFIG"
-echo 'CONFIG_DEFAULT_TCP_CONG="bbrplus"' >> "$DEFCONFIG"
+    echo "CONFIG_DEFAULT_BBRPLUS=y" >> "$DEFCONFIG"
+    echo 'CONFIG_DEFAULT_TCP_CONG="bbrplus"' >> "$DEFCONFIG"
 fi
 
 if [ "$LTOBUILD" = "full" ]; then
     echo "Using FULL LTO"
     echo "CONFIG_LTO_CLANG=y" >> "$DEFCONFIG"
     echo "CONFIG_LTO_CLANG_FULL=y" >> "$DEFCONFIG"
-
 elif [ "$LTOBUILD" = "thin" ]; then
     echo "Using THIN LTO"
     echo "CONFIG_LTO_CLANG=y" >> "$DEFCONFIG"
     echo "CONFIG_LTO_CLANG_THIN=y" >> "$DEFCONFIG"
 fi
 
-# set localversion
+# Set localversion
 SUFFIX="$k_lastcommit"
 config --set-str CONFIG_LOCALVERSION "-$KERNEL_NAME/$SUFFIX"
 config --disable CONFIG_LOCALVERSION_AUTO
@@ -320,10 +293,12 @@ MAKE_ARGS=(
 
 KERNEL_IMAGE="$OUTDIR/arch/arm64/boot/Image"
 MODULE_SYMVERS="$OUTDIR/Module.symvers"
-if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
-  KMI_CHECK="$WORKDIR/py/kmi-check-6.x.py"
+
+# Fix KMI check parsing utilizing LINUX_MAJOR
+if [ "$LINUX_MAJOR" -eq 6 ]; then
+  KMI_CHECK_SCRIPT="$WORKDIR/py/kmi-check-6.x.py"
 else
-  KMI_CHECK="$WORKDIR/py/kmi-check-5.x.py"
+  KMI_CHECK_SCRIPT="$WORKDIR/py/kmi-check-5.x.py"
 fi
 
 # Release Notes
@@ -361,10 +336,10 @@ log "Building kernel..."
 make "${MAKE_ARGS[@]}"
 
 # Check KMI Function symbol
-if [[ $(echo "$LINUX_VERSION_CODE" | head -c1) -eq 6 ]]; then
-  $KMI_CHECK "$KSRC/android/abi_gki_aarch64.stg" "$MODULE_SYMVERS" || true
+if [ "$LINUX_MAJOR" -eq 6 ]; then
+  $KMI_CHECK_SCRIPT "$KSRC/android/abi_gki_aarch64.stg" "$MODULE_SYMVERS" || true
 else
-  $KMI_CHECK "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS" || true
+  $KMI_CHECK_SCRIPT "$KSRC/android/abi_gki_aarch64.xml" "$MODULE_SYMVERS" || true
 fi
 
 BUILD_DATE=$(TZ=Asia/Jakarta date +"%Y%m%d")
@@ -394,51 +369,35 @@ mv "$WORKDIR/$AK3_ZIP_NAME" "$ARTIFACT_DIR/"
 
 # Upload to GitHub Release
 if [ "$BUILD_TYPE" = "release" ]; then
-
     log "Preparing GitHub Release..."
-
-    RELEASE_NOTES="$WORKDIR/release.md"
-
-    cat > "$RELEASE_NOTES" << EOF
-# $KERNEL_NAME
-
-$text
-EOF
-
     RELEASE_TAG="${KERNEL_NAME}-${BUILD_DATE}"
-
-    log "Ensuring GitHub release exists..."
 
     gh release create "$RELEASE_TAG" \
         --repo "$GKI_RELEASES_REPO" \
         --title "$KERNEL_NAME | $BUILD_DATE" \
-        --notes-file "$RELEASE_NOTES" \
+        --notes "Release for variant: ${VARIANT}" \
         >/dev/null 2>&1 || true
 
-    log "Uploading asset to release..."
+    log "Uploading asset $AK3_ZIP_NAME to release $RELEASE_TAG..."
     gh release upload "$RELEASE_TAG" \
         "$ZIP_PATH" \
         --repo "$GKI_RELEASES_REPO" \
         --clobber
 
-    RELEASE_URL="https://github.com/$GKI_RELEASES_REPO/releases/tag/$RELEASE_TAG"
-    TG_RELEASE_MSG="🚀 *New Release!*%0A%0A📱 *Kernel*: \`$KERNEL_NAME\`%0A🔖 *Tag*: \`$RELEASE_TAG\`%0A%0A🔗 [Download Here]($RELEASE_URL)"
-    
-    send_msg "$TG_RELEASE_MSG"
-    log "Link release berhasil dikirim ke Telegram!"
+    log "Asset $AK3_ZIP_NAME successfully uploaded to $RELEASE_TAG"
 else
     log "Test build selected, skipping GitHub Release."
 
     # Telegram Message
-    TG_MESSAGE="*Build Berhasil!*%0A%0A📱 *Kernel*: \`$KERNEL_NAME\`%0A📦 *File*: \`$AK3_ZIP_NAME\`%0A⚙️ *Variant*: \`${VARIANT}\`%0A📅 *Date*: \`${KBUILD_BUILD_TIMESTAMP}\`"
+    TG_MESSAGE="*Build Successful!*%0A%0A📱 *Kernel*: \`$KERNEL_NAME\`%0A📦 *File*: \`$AK3_ZIP_NAME\`%0A⚙️ *Variant*: \`${VARIANT}\`%0A📅 *Date*: \`${KBUILD_BUILD_TIMESTAMP}\`"
 
     # Send
-    log "Mengirim file ke Telegram..."
+    log "Sending file to Telegram..."
     upload_file "$ZIP_PATH" "$TG_MESSAGE"
 fi
 
 # Clean Build
-log "Cleaning"
+log "Cleaning environment"
 rm -rf "$KSRC" "$CLANG_DIR" "$GAS_DIR" "$WORKDIR/anykernel" "$OUTDIR"
 
 exit 0
