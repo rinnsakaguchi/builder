@@ -93,8 +93,8 @@ env:
 
 jobs:
   build:
-  runs-on: ubuntu-latest
-  permissions:
+    runs-on: ubuntu-latest
+    permissions:
       contents: write
     strategy:
       fail-fast: false
@@ -127,11 +127,11 @@ jobs:
           VARIANT: ${{ matrix.variant }}
           KERNEL_NAME: ${{ inputs.KERNELNAME || 'Kinosaki' }}
           REPONYA: ${{ inputs.kernelrepo || 'main' }}
-          LTOBUILD: ${{ inputs.LTOBUILD || 'thin' }}
-          CLANGURL: ${{ inputs.CLANGURL || 'gf-clang' }}
+          LTOBUILD: ${{ inputs.LTOBUILD || 'full' }}
+          CLANGURL: ${{ inputs.CLANGURL || '12' }}
           TCPCONG: ${{ inputs.TCPCONG || 'westwood' }}
-          CONFIGHZ: ${{ inputs.CONFIGHZ || '250' }}
-          KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'test' }}
+          CONFIGHZ: ${{ inputs.CONFIGHZ || '300' }}
+          KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'lts' }}
           TODO: ${{ inputs.TODO || 'kernel' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -144,8 +144,8 @@ jobs:
         with:
           name: kernel-${{ matrix.variant }}
           path: artifacts/*.zip
-
-    release:
+ 
+  release:
     needs: [build]
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.build_type == 'release' }}
@@ -171,16 +171,14 @@ jobs:
           RELEASE_TAG="${KERNEL_NAME}-${BUILD_DATE}"
           
           echo "Creating Release Tag: $RELEASE_TAG"
-
+          
           gh release create "$RELEASE_TAG" \
             --repo "rinnsakaguchi/GKI-Release" \
             --title "$KERNEL_NAME | $BUILD_DATE" \
             --notes "Automated release build for $KERNEL_NAME branches." || true
             
-          # Keep a brief delay to let the GitHub API sync
           sleep 3
             
-          # Upload all extracted ZIP variants
           gh release upload "$RELEASE_TAG" all-artifacts/*.zip \
             --repo "rinnsakaguchi/GKI-Release" \
             --clobber
