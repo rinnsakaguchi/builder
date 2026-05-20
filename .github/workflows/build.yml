@@ -19,14 +19,14 @@ on:
           - "rama"
       TCPCONG:
         description: "TCP Congestion Control"
-        default: "westwood"
+        default: "bbrplus"
         type: choice
         options:
           - "bbrplus"
           - "westwood"
       CLANGURL:
         description: "Select Clang Version"
-        default: "12"
+        default: "gf-clang"
         type: choice
         options:
           - "12"
@@ -37,14 +37,14 @@ on:
           - "gf-clang"
       LTOBUILD:
         description: "Setup LTO"
-        default: "full"
+        default: "thin"
         type: choice
         options:
           - "full"
           - "thin"
       VARIANT:
         description: "Kernel Variants"
-        default: "SUSFS"
+        default: "ALL"
         type: choice
         options:
           - "VNL"
@@ -53,7 +53,7 @@ on:
           - "ALL"
       CONFIGHZ:
         description: "Custom HZ"
-        default: "300"
+        default: "250"
         type: choice
         options:
           - "250"
@@ -69,7 +69,7 @@ on:
       KERNELBRANCH:
         description: "Kernel Branch (Main Repo)"
         required: true
-        default: "lts"
+        default: "test"
         type: choice
         options:
           - lts
@@ -127,11 +127,11 @@ jobs:
           VARIANT: ${{ matrix.variant }}
           KERNEL_NAME: ${{ inputs.KERNELNAME || 'Kinosaki' }}
           REPONYA: ${{ inputs.kernelrepo || 'main' }}
-          LTOBUILD: ${{ inputs.LTOBUILD || 'full' }}
-          CLANGURL: ${{ inputs.CLANGURL || '12' }}
-          TCPCONG: ${{ inputs.TCPCONG || 'westwood' }}
-          CONFIGHZ: ${{ inputs.CONFIGHZ || '300' }}
-          KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'lts' }}
+          LTOBUILD: ${{ inputs.LTOBUILD || 'thin' }}
+          CLANGURL: ${{ inputs.CLANGURL || 'gf-clang' }}
+          TCPCONG: ${{ inputs.TCPCONG || 'bbrplus' }}
+          CONFIGHZ: ${{ inputs.CONFIGHZ || '250' }}
+          KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'test' }}
           TODO: ${{ inputs.TODO || 'kernel' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
