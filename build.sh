@@ -367,32 +367,10 @@ ZIP_PATH="$ARTIFACT_DIR/$AK3_ZIP_NAME"
 mkdir -p "$ARTIFACT_DIR"
 mv "$WORKDIR/$AK3_ZIP_NAME" "$ARTIFACT_DIR/"
 
-# Upload to GitHub Release
-if [ "$BUILD_TYPE" = "release" ]; then
-    log "Preparing GitHub Release..."
-    RELEASE_TAG="${KERNEL_NAME}-${BUILD_DATE}"
-
-    gh release create "$RELEASE_TAG" \
-        --repo "$GKI_RELEASES_REPO" \
-        --title "$KERNEL_NAME | $BUILD_DATE" \
-        --notes "Release for variant: ${VARIANT}" \
-        >/dev/null 2>&1 || true
-
-    log "Uploading asset $AK3_ZIP_NAME to release $RELEASE_TAG..."
-    gh release upload "$RELEASE_TAG" \
-        "$ZIP_PATH" \
-        --repo "$GKI_RELEASES_REPO" \
-        --clobber
-
-    log "Asset $AK3_ZIP_NAME successfully uploaded to $RELEASE_TAG"
-else
-    log "Test build selected, skipping GitHub Release."
-
-    # Telegram Message
+# Telegram fallback for test builds
+if [ "$BUILD_TYPE" != "release" ]; then
+    log "Test build completed. Sending file to Telegram..."
     TG_MESSAGE="*Build Successful!*%0A%0A📱 *Kernel*: \`$KERNEL_NAME\`%0A📦 *File*: \`$AK3_ZIP_NAME\`%0A⚙️ *Variant*: \`${VARIANT}\`%0A📅 *Date*: \`${KBUILD_BUILD_TIMESTAMP}\`"
-
-    # Send
-    log "Sending file to Telegram..."
     upload_file "$ZIP_PATH" "$TG_MESSAGE"
 fi
 

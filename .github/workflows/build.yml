@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       TODO:
-        description: "Action to perform"
+        description: "Generate"
         default: "kernel"
         type: choice
         options:
@@ -105,11 +105,6 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Setup GitHub CLI Auth
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh auth status
-
       - name: Free Disk Space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -132,35 +127,86 @@ jobs:
           VARIANT: ${{ matrix.variant }}
           KERNEL_NAME: ${{ inputs.KERNELNAME || 'Kinosaki' }}
           REPONYA: ${{ inputs.kernelrepo || 'main' }}
-          LTOBUILD: ${{ inputs.LTOBUILD || 'full' }}
-          CLANGURL: ${{ inputs.CLANGURL || '12' }}
+          LTOBUILD: ${{ inputs.LTOBUILD || 'thin' }}
+          CLANGURL: ${{ inputs.CLANGURL || 'gf-clang' }}
           TCPCONG: ${{ inputs.TCPCONG || 'westwood' }}
-          CONFIGHZ: ${{ inputs.CONFIGHZ || '300' }}
-          KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'lts' }}
+          CONFIGHZ: ${{ inputs.CONFIGHZ || '250' }}
+          KERNELBRANCH: ${{ inputs.KERNELBRANCH || 'test' }}
           TODO: ${{ inputs.TODO || 'kernel' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x *.sh
           if [ -d "py" ]; then chmod +x py/*.py; fi
           ./build.sh
 
-      - name: Upload Artifact
-        if: always()
+      - name: Upload Intermediary Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kernel-${{ matrix.variant }}
-          path: artifacts/*
+          path: artifacts/*.zip
 
-  notify:
+  release:
     needs: [build]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ github.event.inputs.build_type == 'release' }}
+    permissions:
+      contents: write
     steps:
-      - name: Send Final Notification
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Matrix Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+          pattern: kernel-*
+          merge-multiple: true
+
+      - name: Create Unified GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_TAG="${{ inputs.KERNELNAME || 'Kinosaki' }}-$(date +%Y%m%d)"
-          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/$RELEASE_TAG"
-          MSG="🚀 *Build Completed!*%0A%0A📱 *Kernel*: \`${{ inputs.KERNELNAME || 'Kinosaki' }}\`%0A🔖 *Tag*: \`$RELEASE_TAG\`%0A%0A🔗 [Download on GitHub]($RELEASE_URL)"
+          BUILD_DATE=$(date +"%Y%m%d")
+          KERNEL_NAME="${{ inputs.KERNELNAME }}"
+          RELEASE_TAG="${KERNEL_NAME}-${BUILD_DATE}"
+          
+          echo "Creating Release Tag: $RELEASE_TAG"
+          
+          # Create single release point
+          gh release create "$RELEASE_TAG" \
+            --repo "${{ env.GKI_RELEASES_REPO || 'rinnsakaguchi/GKI-Release' }}" \
+            --title "$KERNEL_NAME | $BUILD_DATE" \
+            --notes "Automated release build for $KERNEL_NAME branches." \
+            --clobber || true
+            
+          # Upload all extracted ZIP variants directly into the release
+          gh release upload "$RELEASE_TAG" all-artifacts/*.zip \
+            --repo "${{ env.GKI_RELEASES_REPO || 'rinnsakaguchi/GKI-Release' }}" \
+            --clobber
+
+      - name: Send Release Notification to Telegram
+        run: |
+          BUILD_DATE=$(date +"%Y%m%d")
+          RELEASE_TAG="${{ inputs.KERNELNAME || 'Kinosaki' }}-${BUILD_DATE}"
+          RELEASE_URL="https://github.com/rinnsakaguchi/GKI-Release/releases/tag/$RELEASE_TAG"
+          
+          MSG="🚀 *Unified Release Published!*%0A%0A📱 *Kernel*: \`${{ inputs.KERNELNAME || 'Kinosaki' }}\`%0A🔖 *Tag*: \`$RELEASE_TAG\`%0A%0A🔗 [Download All Variants Here]($RELEASE_URL)"
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TG_CHAT_ID }}" \
+            -d "message_thread_id=7" \
+            -d "parse_mode=markdown" \
+            -d "text=$MSG"
+
+  notify-test:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.build_type != 'release' && always() }}
+    steps:
+      - name: Send Test Completion Notification
+        run: |
+          MSG="✅ *Test Build Completed!*%0A%0A📱 *Kernel*: \`${{ inputs.KERNELNAME || 'Kinosaki' }}\`%0A📦 Check your Telegram channel/thread for individual zip deliveries."
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TG_CHAT_ID }}" \
+            -d "message_thread_id=7" \
             -d "parse_mode=markdown" \
             -d "text=$MSG"
