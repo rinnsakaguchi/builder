@@ -93,8 +93,8 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    permissions:
+  runs-on: ubuntu-latest
+  permissions:
       contents: write
     strategy:
       fail-fast: false
