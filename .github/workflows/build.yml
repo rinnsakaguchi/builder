@@ -145,7 +145,7 @@ jobs:
           name: kernel-${{ matrix.variant }}
           path: artifacts/*.zip
 
-  release:
+    release:
     needs: [build]
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.build_type == 'release' }}
@@ -167,21 +167,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BUILD_DATE=$(date +"%Y%m%d")
-          KERNEL_NAME="${{ inputs.KERNELNAME }}"
+          KERNEL_NAME="${{ inputs.KERNELNAME || 'Kinosaki' }}"
           RELEASE_TAG="${KERNEL_NAME}-${BUILD_DATE}"
           
           echo "Creating Release Tag: $RELEASE_TAG"
-          
-          # Create single release point
+
           gh release create "$RELEASE_TAG" \
-            --repo "${{ env.GKI_RELEASES_REPO || 'rinnsakaguchi/GKI-Release' }}" \
+            --repo "rinnsakaguchi/GKI-Release" \
             --title "$KERNEL_NAME | $BUILD_DATE" \
-            --notes "Automated release build for $KERNEL_NAME branches." \
-            --clobber || true
+            --notes "Automated release build for $KERNEL_NAME branches." || true
             
-          # Upload all extracted ZIP variants directly into the release
+          # Keep a brief delay to let the GitHub API sync
+          sleep 3
+            
+          # Upload all extracted ZIP variants
           gh release upload "$RELEASE_TAG" all-artifacts/*.zip \
-            --repo "${{ env.GKI_RELEASES_REPO || 'rinnsakaguchi/GKI-Release' }}" \
+            --repo "rinnsakaguchi/GKI-Release" \
             --clobber
 
       - name: Send Release Notification to Telegram
@@ -193,7 +194,6 @@ jobs:
           MSG="🚀 *Unified Release Published!*%0A%0A📱 *Kernel*: \`${{ inputs.KERNELNAME || 'Kinosaki' }}\`%0A🔖 *Tag*: \`$RELEASE_TAG\`%0A%0A🔗 [Download All Variants Here]($RELEASE_URL)"
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TG_CHAT_ID }}" \
-            -d "message_thread_id=7" \
             -d "parse_mode=markdown" \
             -d "text=$MSG"
 
